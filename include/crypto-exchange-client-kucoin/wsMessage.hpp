@@ -132,22 +132,22 @@ namespace as::cryptox::kucoin {
 			return m_symbolName;
 		}
 
-		const as::FixedNumber & AskPrice() const
+		as::FixedNumber & AskPrice()
 		{
 			return m_askPrice;
 		}
 
-		const as::FixedNumber & AskSize() const
+		as::FixedNumber & AskSize()
 		{
 			return m_askSize;
 		}
 
-		const as::FixedNumber & BidPrice() const
+		as::FixedNumber & BidPrice()
 		{
 			return m_bidPrice;
 		}
 
-		const as::FixedNumber & BidSize() const
+		as::FixedNumber & BidSize()
 		{
 			return m_bidSize;
 		}

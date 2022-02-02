@@ -23,15 +23,37 @@ SOFTWARE.
 /// 0.0 - created (Denis Rozhkov <denis@rozhkoff.com>)
 ///
 
-#include <iostream>
-
 #include "boost/json.hpp"
+
+#include "crypto-exchange-client-core/logger.hpp"
+#include "crypto-exchange-client-core/exception.hpp"
 
 #include "crypto-exchange-client-kucoin/client.hpp"
 #include "crypto-exchange-client-kucoin/wsMessage.hpp"
 
 
 namespace as::cryptox::kucoin {
+
+	void Client::addAuthHeaders( HttpHeaderList & headers,
+		const ::as::t_string & path,
+		::as::HttpMethod httpMethod,
+		const ::as::t_string & body )
+	{
+
+		auto ts = AS_TOSTRING( UnixTs<std::chrono::milliseconds>() );
+		auto data = ts + HttpsClient::MethodName( httpMethod ) + path + body;
+		auto s = ::as::hmacSha256( m_apiSecret, data );
+		auto sign = toBase64( t_buffer( s.data(), s.size() ) );
+
+		headers.add( AS_T( "KC-API-KEY" ), m_apiKey );
+		headers.add( AS_T( "KC-API-SIGN" ), sign );
+		headers.add( AS_T( "KC-API-TIMESTAMP" ), ts );
+
+		auto p = as::hmacSha256( m_apiSecret, m_apiPassphrase );
+		auto passphrase = toBase64( t_buffer( p.data(), p.size() ) );
+		headers.add( AS_T( "KC-API-PASSPHRASE" ), passphrase );
+		headers.add( AS_T( "KC-API-KEY-VERSION" ), m_apiKeyVersion );
+	}
 
 	void Client::wsErrorHandler(
 		WsClient & client, int code, const as::t_string & message )
@@ -85,44 +107,39 @@ namespace as::cryptox::kucoin {
 		}
 	}
 
-	void Client::apiReqBulletPublic()
+	ApiResponseBullet Client::apiReqBulletPublic()
 	{
-		auto res =
-			m_httpClient.post( m_httpApiUrl.addPath( AS_T( "bullet-public" ) ),
-				HttpHeaderList(),
-				"" );
+		auto url = m_httpApiUrl.addPath( AS_T( "bullet-public" ) );
+		auto res = m_httpClient.post( url, HttpHeaderList() );
 
-		auto v = boost::json::parse( res );
-		auto & o = v.get_object();
+		return ApiResponseBullet::deserialize( res );
+	}
 
-		if ( o.contains( "code" ) && "200000" == o["code"].get_string() ) {
-			auto & data = o["data"].get_object();
-			auto & instanceServer =
-				data["instanceServers"].get_array()[0].get_object();
+	ApiResponseBullet Client::apiReqBulletPrivate()
+	{
+		auto url = m_httpApiUrl.addPath( AS_T( "bullet-private" ) );
 
-			m_wsPingIntervalMs = instanceServer["pingInterval"].get_int64();
-			m_wsTimeoutMs =
-				m_wsPingIntervalMs + instanceServer["pingTimeout"].get_int64();
+		HttpHeaderList headers;
+		addAuthHeaders( headers, url.Path(), HttpMethod::POST );
 
-			m_token.assign( data["token"].get_string() );
+		auto res = m_httpClient.post( url, headers );
 
-			as::Url::parse( m_wsApiUrl,
-				const_cast<const boost::json::value &>(
-					instanceServer["endpoint"] )
-						.get_string()
-						.c_str() +
-					std::string( "?token=" ) + m_token );
-		}
-		else {
-			throw std::logic_error( "bullet-public" );
-		}
+		return ApiResponseBullet::deserialize( res );
 	}
 
 	void Client::initWsClient()
 	{
 		std::lock_guard<std::mutex> lock( m_wsPingSync );
 
-		apiReqBulletPublic();
+		ApiResponseBullet apiRes =
+			m_apiKey.empty() ? apiReqBulletPublic() : apiReqBulletPrivate();
+
+		m_wsPingIntervalMs = apiRes.PingInterval();
+		m_wsTimeoutMs = m_wsPingIntervalMs + apiRes.PingTimeout();
+		m_token = std::move( apiRes.Token() );
+
+		as::Url::parse(
+			m_wsApiUrl, apiRes.Endpoint() + AS_T( "?token=" ) + m_token );
 
 		as::cryptox::Client::initWsClient();
 
@@ -165,5 +182,4 @@ namespace as::cryptox::kucoin {
 
 		m_wsClient->writeAsync( buffer.c_str(), buffer.length() );
 	}
-
 }

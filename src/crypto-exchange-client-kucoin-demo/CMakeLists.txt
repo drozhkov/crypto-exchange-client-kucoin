@@ -48,7 +48,7 @@ endif()
 #
 add_executable(${PROJECT_NAME} 
 	_kucoin-demo.cpp
-)
+  "api-secret.hpp")
 
 
 #

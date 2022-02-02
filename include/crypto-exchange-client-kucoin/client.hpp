@@ -30,17 +30,30 @@ SOFTWARE.
 #include "crypto-exchange-client-core/httpClient.hpp"
 #include "crypto-exchange-client-core/client.hpp"
 
+#include "crypto-exchange-client-kucoin/apiMessage.hpp"
+
 
 namespace as::cryptox::kucoin {
 
 	class Client : public as::cryptox::Client {
 	protected:
-		std::string m_token;
-		std::string m_connectId;
+		as::t_string m_apiKey;
+		as::t_string m_apiKeyVersion;
+		as::t_string m_apiSecret;
+		as::t_string m_apiPassphrase;
+
+		as::t_string m_token;
+		as::t_string m_connectId;
 		t_timespan m_wsPingIntervalMs;
 
 		std::thread m_wsPingThread;
 		std::mutex m_wsPingSync;
+
+	private:
+		void addAuthHeaders( HttpHeaderList & headers,
+			const as::t_string & path,
+			as::HttpMethod httpMethod,
+			const as::t_string & body = AS_T( "" ) );
 
 	protected:
 		void wsErrorHandler(
@@ -49,46 +62,37 @@ namespace as::cryptox::kucoin {
 		void wsHandshakeHandler( as::WsClient & ) override;
 		void wsReadHandler( as::WsClient &, const char *, size_t ) override;
 
-		void apiReqBulletPublic();
+		void initSymbolMap() override
+		{
+			addSymbolMapEntry(
+				AS_T( "BTC-USDT" ), as::cryptox::Symbol::BTC_USDT );
+		}
 
 		void initWsClient() override;
 
 	public:
-		Client( const as::t_string & httpApiUrl = AS_T(
-					"https://api.kucoin.com/api/v1" ) )
+		Client( const as::t_string & apiKey = AS_T( "" ),
+			const as::t_string & apiSecret = AS_T( "" ),
+			const as::t_string & apiPassphrase = AS_T( "" ),
+			const as::t_string & httpApiUrl = AS_T(
+				"https://api.kucoin.com/api/v1" ),
+			int apiKeyVersion = 2 )
 			: as::cryptox::Client(
 				  httpApiUrl, AS_T( "wss://ws-api.kucoin.com/endpoint" ) )
+			, m_apiKey( apiKey )
+			, m_apiSecret( apiSecret )
+			, m_apiPassphrase( apiPassphrase )
+			, m_apiKeyVersion( AS_TOSTRING( apiKeyVersion ) )
 		{
 		}
+
+		ApiResponseBullet apiReqBulletPublic();
+		ApiResponseBullet apiReqBulletPrivate();
 
 		void run( const t_exchangeClientReadyHandler & handler ) override;
 
 		void subscribePriceBookTicker( as::cryptox::Symbol symbol,
 			const t_priceBookTickerHandler & handler ) override;
-
-		const as::t_char * SymbolName(
-			as::cryptox::Symbol symbol ) const override
-		{
-			switch ( symbol ) {
-				case Symbol::BTC_USDT:
-					return AS_T( "BTC-USDT" );
-			}
-
-			return as::cryptox::Client::SymbolName( symbol );
-		}
-
-		as::cryptox::Symbol Symbol(
-			const as::t_char * symbolName ) const override
-		{
-
-			if ( std::strcmp( SymbolName( Symbol::BTC_USDT ), symbolName ) ==
-				0 ) {
-
-				return Symbol::BTC_USDT;
-			}
-
-			return as::cryptox::Client::Symbol( symbolName );
-		}
 	};
 
 }

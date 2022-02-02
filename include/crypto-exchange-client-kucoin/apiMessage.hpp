@@ -27,18 +27,77 @@ SOFTWARE.
 #define __CRYPTO_EXCHANGE_CLIENT_KUCOIN__API_MESSAGE__H
 
 
+#include "boost/json.hpp"
+
+#include "crypto-exchange-client-core/core.hpp"
+#include "crypto-exchange-client-core/exception.hpp"
 #include "crypto-exchange-client-core/apiMessage.hpp"
 
 
 namespace as::cryptox::kucoin {
 
-	class ApiMessage : public as::cryptox::ApiMessage {
+	class ApiMessage : public ::as::cryptox::ApiMessage {
+	};
+
+	class ApiResponseBullet : public ApiMessage {
+	protected:
+		int64_t m_pingInterval;
+		int64_t m_pingTimeout;
+		::as::t_string m_token;
+		::as::t_string m_endpoint;
+
 	public:
-		static std::shared_ptr<ApiMessage> deserialize(
-			const char * data, size_t size )
+		static ApiResponseBullet deserialize( const ::as::t_string & s )
 		{
+			auto v = boost::json::parse( s );
+			auto & o = v.get_object();
+
+			if ( o.contains( "code" ) && "200000" == o["code"].get_string() ) {
+				ApiResponseBullet result;
+
+				auto & data = o["data"].get_object();
+				auto & instanceServer =
+					data["instanceServers"].get_array()[0].get_object();
+
+				result.m_pingInterval =
+					instanceServer["pingInterval"].get_int64();
+
+				result.m_pingTimeout =
+					instanceServer["pingTimeout"].get_int64();
+
+				result.m_token.assign( data["token"].get_string() );
+				result.m_endpoint.assign(
+					instanceServer["endpoint"].get_string() );
+
+				return result;
+			}
+			else {
+				throw ::as::Exception( AS_T( "ApiResponseBullet" ) );
+			}
+		}
+
+		int64_t PingInterval() const
+		{
+			return m_pingInterval;
+		}
+
+		int64_t PingTimeout() const
+		{
+			return m_pingTimeout;
+		}
+
+		::as::t_string & Token()
+		{
+			return m_token;
+		}
+
+		::as::t_string & Endpoint()
+		{
+			return m_endpoint;
 		}
 	};
+
+}
 
 
 #endif
