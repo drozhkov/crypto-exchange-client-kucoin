@@ -12,3 +12,4 @@ _deps
 /.vs
 /CMakeSettings.json
 /out/
+/src/crypto-exchange-client-kucoin-demo/api-secret.hpp

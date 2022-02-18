@@ -28,10 +28,7 @@ SOFTWARE.
 
 namespace as::cryptox::kucoin {
 
-	std::atomic_uint WsMessage::s_requestId{ 0 };
-
-
-	std::shared_ptr<as::cryptox::WsMessage> WsMessage::deserialize(
+	std::shared_ptr<as::cryptox::ApiMessageBase> WsMessage::deserialize(
 		const char * data, size_t size )
 	{
 

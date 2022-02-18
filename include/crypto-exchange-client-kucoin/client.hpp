@@ -60,7 +60,7 @@ namespace as::cryptox::kucoin {
 			as::WsClient &, int, const as::t_string & ) override;
 
 		void wsHandshakeHandler( as::WsClient & ) override;
-		void wsReadHandler( as::WsClient &, const char *, size_t ) override;
+		bool wsReadHandler( as::WsClient &, const char *, size_t ) override;
 
 		void initSymbolMap() override
 		{

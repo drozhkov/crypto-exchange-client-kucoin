@@ -65,7 +65,7 @@ namespace as::cryptox::kucoin {
 		client.readAsync();
 	}
 
-	void Client::wsReadHandler(
+	bool Client::wsReadHandler(
 		WsClient & client, const char * data, size_t size )
 	{
 
@@ -105,6 +105,8 @@ namespace as::cryptox::kucoin {
 		}
 		catch ( ... ) {
 		}
+
+		return true;
 	}
 
 	ApiResponseBullet Client::apiReqBulletPublic()
@@ -182,4 +184,5 @@ namespace as::cryptox::kucoin {
 
 		m_wsClient->writeAsync( buffer.c_str(), buffer.length() );
 	}
+
 }

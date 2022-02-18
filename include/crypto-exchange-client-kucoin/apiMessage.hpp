@@ -36,7 +36,7 @@ SOFTWARE.
 
 namespace as::cryptox::kucoin {
 
-	class ApiMessage : public ::as::cryptox::ApiMessage {
+	class ApiMessage : public ::as::cryptox::ApiMessage<ApiMessage> {
 	};
 
 	class ApiResponseBullet : public ApiMessage {

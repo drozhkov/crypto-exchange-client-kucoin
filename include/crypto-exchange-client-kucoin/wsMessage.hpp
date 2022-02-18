@@ -32,46 +32,33 @@ SOFTWARE.
 #include "crypto-exchange-client-core/core.hpp"
 #include "crypto-exchange-client-core/wsMessage.hpp"
 
+#include "crypto-exchange-client-kucoin/apiMessage.hpp"
+
 
 namespace as::cryptox::kucoin {
 
 	class WsMessage : public as::cryptox::WsMessage {
 	public:
-		static const as::cryptox::t_ws_message_type_id TypeIdWelcome = 100;
-		static const as::cryptox::t_ws_message_type_id TypeIdPriceBookTicker =
+		static const as::cryptox::t_api_message_type_id TypeIdWelcome = 100;
+		static const as::cryptox::t_api_message_type_id TypeIdPriceBookTicker =
 			101;
-
-	protected:
-		static std::atomic_uint s_requestId;
 
 	protected:
 		virtual void deserialize( boost::json::object & o ) = 0;
 
-		static auto Id()
-		{
-			auto id = ++s_requestId;
-
-			// TODO
-			if ( id > INT_MAX ) {
-				s_requestId.store( 0 );
-			}
-
-			return id;
-		}
-
 	public:
-		WsMessage( t_ws_message_type_id typeId )
+		WsMessage( t_api_message_type_id typeId )
 			: as::cryptox::WsMessage( typeId )
 		{
 		}
 
-		static std::shared_ptr<as::cryptox::WsMessage> deserialize(
+		static std::shared_ptr<as::cryptox::ApiMessageBase> deserialize(
 			const char * data, size_t size );
 
 		static std::string Ping()
 		{
 			boost::json::object o;
-			o["id"] = Id();
+			o["id"] = ApiMessage::RequestId();
 			o["type"] = "ping";
 
 			return boost::json::serialize( o );
@@ -82,7 +69,7 @@ namespace as::cryptox::kucoin {
 		{
 
 			boost::json::object o;
-			o["id"] = Id();
+			o["id"] = ApiMessage::RequestId();
 			o["type"] = "subscribe";
 			o["topic"] = topicName;
 			o["response"] = shouldSendResponse;
