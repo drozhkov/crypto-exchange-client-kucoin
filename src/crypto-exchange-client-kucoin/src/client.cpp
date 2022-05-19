@@ -53,6 +53,10 @@ namespace as::cryptox::kucoin {
 		auto passphrase = toBase64( t_buffer( p.data(), p.size() ) );
 		headers.add( AS_T( "KC-API-PASSPHRASE" ), passphrase );
 		headers.add( AS_T( "KC-API-KEY-VERSION" ), m_apiKeyVersion );
+
+		if ( !body.empty() ) {
+			headers.add( AS_T( "Content-Type" ), AS_T( "application/json" ) );
+		}
 	}
 
 	void Client::wsErrorHandler(
@@ -70,8 +74,8 @@ namespace as::cryptox::kucoin {
 	{
 
 		try {
-			// std::string s( data, size );
-			// std::cout << s << std::endl;
+			std::string s( data, size );
+			//std::cout << s << std::endl;
 
 			auto message = WsMessage::deserialize( data, size );
 
@@ -98,6 +102,18 @@ namespace as::cryptox::kucoin {
 
 					callSymbolHandler(
 						t.symbol, m_priceBookTickerHandlerMap, t );
+				}
+
+				break;
+
+				case WsMessage::TypeIdOrderUpdate: {
+					auto m =
+						static_cast<WsMessageOrderUpdate *>( message.get() );
+
+					as::cryptox::t_order_update u;
+					u.orderId = std::move( m->OrderId() );
+
+					AS_CALL( m_orderUpdateHandler, *this, u );
 				}
 
 				break;
@@ -182,7 +198,48 @@ namespace as::cryptox::kucoin {
 		auto buffer = WsMessage::Subscribe(
 			std::string( "/market/ticker:" ) + SymbolName( symbol ) );
 
-		m_wsClient->writeAsync( buffer.c_str(), buffer.length() );
+		m_wsClient->write( buffer.c_str(), buffer.length() );
+	}
+
+	void Client::subscribeOrderUpdate( const t_orderUpdateHandler & handler )
+	{
+		as::cryptox::Client::subscribeOrderUpdate( handler );
+		auto buffer =
+			WsMessage::Subscribe( "/spotMarket/tradeOrders", false, true );
+
+		m_wsClient->write( buffer.c_str(), buffer.length() );
+	}
+
+	t_order Client::placeOrder( Direction direction,
+		as::cryptox::Symbol symbol,
+		const FixedNumber & price,
+		const FixedNumber & quantity )
+	{
+
+		boost::json::object o;
+
+		o["clientOid"] = uuidString();
+		o["side"] = DirectionName( direction );
+		o["symbol"] = SymbolName( symbol );
+		o["price"] = price.toString();
+		o["size"] = quantity.toString();
+
+		as::t_string body = boost::json::serialize( o );
+
+		auto url = m_httpApiUrl.addPath( AS_T( "orders" ) );
+
+		HttpHeaderList headers;
+		addAuthHeaders( headers, url.Path(), HttpMethod::POST, body );
+
+		auto res = m_httpClient.post( url, headers, body );
+		//std::cout << res << std::endl;
+
+		auto resOrders = ApiResponseOrders::deserialize( res );
+
+		t_order result;
+		result.id = std::move( resOrders.OrderId() );
+
+		return result;
 	}
 
 }

@@ -97,6 +97,35 @@ namespace as::cryptox::kucoin {
 		}
 	};
 
+	class ApiResponseOrders : public ApiMessage {
+	protected:
+		::as::t_string m_orderId;
+
+	public:
+		static ApiResponseOrders deserialize( const ::as::t_string & s )
+		{
+			auto v = boost::json::parse( s );
+			auto & o = v.get_object();
+
+			if ( o.contains( "code" ) && "200000" == o["code"].get_string() ) {
+				ApiResponseOrders result;
+
+				auto & data = o["data"].get_object();
+				result.m_orderId.assign( data["orderId"].get_string() );
+
+				return result;
+			}
+			else {
+				throw ::as::Exception( AS_T( "ApiResponseOrders" ) );
+			}
+		}
+
+		::as::t_string & OrderId()
+		{
+			return m_orderId;
+		}
+	};
+
 }
 
 

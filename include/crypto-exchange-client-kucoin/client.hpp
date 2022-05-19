@@ -64,8 +64,13 @@ namespace as::cryptox::kucoin {
 
 		void initSymbolMap() override
 		{
+			as::cryptox::Client::initSymbolMap();
+
 			addSymbolMapEntry(
 				AS_T( "BTC-USDT" ), as::cryptox::Symbol::BTC_USDT );
+
+			addSymbolMapEntry(
+				AS_T( "KCS-USDT" ), as::cryptox::Symbol::KCS_USDT );
 		}
 
 		void initWsClient() override;
@@ -83,7 +88,10 @@ namespace as::cryptox::kucoin {
 			, m_apiSecret( apiSecret )
 			, m_apiPassphrase( apiPassphrase )
 			, m_apiKeyVersion( AS_TOSTRING( apiKeyVersion ) )
+			, m_wsPingIntervalMs( 0 )
 		{
+
+			initSymbolMap();
 		}
 
 		ApiResponseBullet apiReqBulletPublic();
@@ -93,6 +101,14 @@ namespace as::cryptox::kucoin {
 
 		void subscribePriceBookTicker( as::cryptox::Symbol symbol,
 			const t_priceBookTickerHandler & handler ) override;
+
+		void subscribeOrderUpdate(
+			const t_orderUpdateHandler & handler ) override;
+
+		t_order placeOrder( Direction direction,
+			as::cryptox::Symbol symbol,
+			const FixedNumber & price,
+			const FixedNumber & quantity ) override;
 	};
 
 }

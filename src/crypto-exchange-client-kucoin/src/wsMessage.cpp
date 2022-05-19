@@ -28,7 +28,7 @@ SOFTWARE.
 
 namespace as::cryptox::kucoin {
 
-	std::shared_ptr<as::cryptox::ApiMessageBase> WsMessage::deserialize(
+	std::shared_ptr<::as::cryptox::ApiMessageBase> WsMessage::deserialize(
 		const char * data, size_t size )
 	{
 
@@ -52,6 +52,9 @@ namespace as::cryptox::kucoin {
 			if ( topicName.starts_with( "/market/ticker:" ) ) {
 				r = new WsMessagePriceBookTicker;
 			}
+			else if ( topicName.starts_with( "/spotMarket/tradeOrders" ) ) {
+				r = new WsMessageOrderUpdate;
+			}
 		}
 
 		if ( nullptr == r ) {
@@ -60,7 +63,7 @@ namespace as::cryptox::kucoin {
 
 		r->deserialize( o );
 
-		return std::shared_ptr<as::cryptox::WsMessage>( r );
+		return std::shared_ptr<::as::cryptox::WsMessage>( r );
 	}
 
 	//
@@ -88,6 +91,14 @@ namespace as::cryptox::kucoin {
 		m_askSize.Value( data["bestAskSize"].get_string() );
 		m_bidPrice.Value( data["bestBid"].get_string() );
 		m_bidSize.Value( data["bestBidSize"].get_string() );
+	}
+
+	//
+
+	void WsMessageOrderUpdate::deserialize( boost::json::object & o )
+	{
+		auto & data = o["data"].get_object();
+		m_orderId.assign( data["orderId"].get_string() );
 	}
 
 }

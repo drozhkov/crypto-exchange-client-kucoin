@@ -14,7 +14,7 @@ endif()
 ##
 set(Boost_MULTITHREADED ON)
 
-find_package(Boost COMPONENTS system json)
+find_package(Boost REQUIRED system json)
 include_directories(
 	${Boost_INCLUDE_DIRS}
 )

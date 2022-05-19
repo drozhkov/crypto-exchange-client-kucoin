@@ -30,6 +30,7 @@ SOFTWARE.
 #include "boost/json.hpp"
 
 #include "crypto-exchange-client-core/core.hpp"
+#include "crypto-exchange-client-core/client.hpp"
 #include "crypto-exchange-client-core/wsMessage.hpp"
 
 #include "crypto-exchange-client-kucoin/apiMessage.hpp"
@@ -37,22 +38,25 @@ SOFTWARE.
 
 namespace as::cryptox::kucoin {
 
-	class WsMessage : public as::cryptox::WsMessage {
+	class WsMessage : public ::as::cryptox::WsMessage {
 	public:
-		static const as::cryptox::t_api_message_type_id TypeIdWelcome = 100;
-		static const as::cryptox::t_api_message_type_id TypeIdPriceBookTicker =
-			101;
+		static const ::as::cryptox::t_api_message_type_id TypeIdWelcome = 100;
+		static const ::as::cryptox::t_api_message_type_id
+			TypeIdPriceBookTicker = 101;
+
+		static const ::as::cryptox::t_api_message_type_id TypeIdOrderUpdate =
+			102;
 
 	protected:
 		virtual void deserialize( boost::json::object & o ) = 0;
 
 	public:
 		WsMessage( t_api_message_type_id typeId )
-			: as::cryptox::WsMessage( typeId )
+			: ::as::cryptox::WsMessage( typeId )
 		{
 		}
 
-		static std::shared_ptr<as::cryptox::ApiMessageBase> deserialize(
+		static std::shared_ptr<::as::cryptox::ApiMessageBase> deserialize(
 			const char * data, size_t size );
 
 		static std::string Ping()
@@ -64,8 +68,9 @@ namespace as::cryptox::kucoin {
 			return boost::json::serialize( o );
 		}
 
-		static std::string Subscribe(
-			const std::string & topicName, bool shouldSendResponse = false )
+		static std::string Subscribe( const std::string & topicName,
+			bool shouldSendResponse = false,
+			bool isPrivateChannel = false )
 		{
 
 			boost::json::object o;
@@ -73,6 +78,10 @@ namespace as::cryptox::kucoin {
 			o["type"] = "subscribe";
 			o["topic"] = topicName;
 			o["response"] = shouldSendResponse;
+
+			if ( isPrivateChannel ) {
+				o["privateChannel"] = isPrivateChannel;
+			}
 
 			return boost::json::serialize( o );
 		}
@@ -100,10 +109,10 @@ namespace as::cryptox::kucoin {
 	class WsMessagePriceBookTicker : public WsMessage {
 	protected:
 		std::string m_symbolName;
-		as::FixedNumber m_askPrice;
-		as::FixedNumber m_askSize;
-		as::FixedNumber m_bidPrice;
-		as::FixedNumber m_bidSize;
+		::as::FixedNumber m_askPrice;
+		::as::FixedNumber m_askSize;
+		::as::FixedNumber m_bidPrice;
+		::as::FixedNumber m_bidSize;
 
 	protected:
 		void deserialize( boost::json::object & o ) override;
@@ -119,24 +128,43 @@ namespace as::cryptox::kucoin {
 			return m_symbolName;
 		}
 
-		as::FixedNumber & AskPrice()
+		::as::FixedNumber & AskPrice()
 		{
 			return m_askPrice;
 		}
 
-		as::FixedNumber & AskSize()
+		::as::FixedNumber & AskSize()
 		{
 			return m_askSize;
 		}
 
-		as::FixedNumber & BidPrice()
+		::as::FixedNumber & BidPrice()
 		{
 			return m_bidPrice;
 		}
 
-		as::FixedNumber & BidSize()
+		::as::FixedNumber & BidSize()
 		{
 			return m_bidSize;
+		}
+	};
+
+	class WsMessageOrderUpdate : public WsMessage {
+	protected:
+		as::cryptox::t_order_id m_orderId;
+
+	protected:
+		void deserialize( boost::json::object & o ) override;
+
+	public:
+		WsMessageOrderUpdate()
+			: WsMessage( TypeIdOrderUpdate )
+		{
+		}
+
+		t_order_id & OrderId()
+		{
+			return m_orderId;
 		}
 	};
 

@@ -44,11 +44,19 @@ if(NOT WIN32)
 	)
 endif()
 
+##
+if(WIN32)
+	set(LIBS
+		${LIBS}
+		bcrypt
+	)
+endif()
+
 
 #
 add_executable(${PROJECT_NAME} 
 	_kucoin-demo.cpp
-  "api-secret.hpp")
+)
 
 
 #
