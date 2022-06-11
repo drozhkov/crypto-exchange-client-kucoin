@@ -22,18 +22,19 @@ int main()
 					std::cout << "order update: " << u.orderId << std::endl;
 				} );
 
-			c.subscribePriceBookTicker( as::cryptox::Symbol::ALL,
+			c.subscribePriceBookTicker( as::cryptox::Symbol::A_ALL,
 				[]( as::cryptox::Client & c,
 					as::cryptox::t_price_book_ticker & t ) {
 					std::cout << "price book ticker: " << t.askPrice.toString()
 							  << '/' << t.askQuantity.toString() << " - "
 							  << t.bidPrice.toString() << '/'
-							  << t.bidQuantity.toString() << std::endl;
+							  << t.bidQuantity.toString() << " - "
+							  << c.Pair( t.symbol ).Name() << std::endl;
 
-					c.placeOrder( as::cryptox::Direction::BUY,
-						t.symbol,
-						t.askPrice,
-						t.askQuantity );
+					// c.placeOrder( as::cryptox::Direction::BUY,
+					//	t.symbol,
+					//	t.askPrice,
+					//	t.askQuantity );
 				} );
 		} );
 	}

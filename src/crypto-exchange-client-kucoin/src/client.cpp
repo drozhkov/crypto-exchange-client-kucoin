@@ -75,7 +75,7 @@ namespace as::cryptox::kucoin {
 
 		try {
 			std::string s( data, size );
-			//std::cout << s << std::endl;
+			std::cout << s << std::endl;
 
 			auto message = WsMessage::deserialize( data, size );
 
@@ -145,6 +145,51 @@ namespace as::cryptox::kucoin {
 		return ApiResponseBullet::deserialize( res );
 	}
 
+	ApiResponseSymbols Client::apiReqSymbols()
+	{
+		auto url = m_httpApiUrl.addPath( AS_T( "symbols" ) );
+		auto res = m_httpClient.get( url, HttpHeaderList() );
+
+		return ApiResponseSymbols::deserialize( res );
+	}
+
+	void Client::initSymbolMap()
+	{
+		as::cryptox::Client::initSymbolMap();
+
+		auto apiRes = apiReqSymbols();
+
+		m_pairList.resize( apiRes.Pairs().size() + 2 );
+		m_pairList[0] = as::cryptox::Pair( as::cryptox::Coin::_undef,
+			as::cryptox::Coin::_undef,
+			AS_T( "undefined" ) );
+
+		size_t index = 1;
+
+		for ( const auto & p : apiRes.Pairs() ) {
+			std::cout << p.name << std::endl;
+
+			as::cryptox::Coin quote = Coin( p.quoteName.c_str() );
+			as::cryptox::Coin base = Coin( p.baseName.c_str() );
+
+			as::cryptox::Pair pair( base,
+				quote,
+				p.name,
+				p.baseMinSize,
+				p.quoteMinSize,
+				p.baseIncrement,
+				p.quoteIncrement,
+				p.priceIncrement );
+
+			m_pairList[index] = pair;
+
+			addSymbolMapEntry(
+				p.name, static_cast<as::cryptox::Symbol>( index ) );
+
+			index++;
+		}
+	}
+
 	void Client::initWsClient()
 	{
 		std::lock_guard<std::mutex> lock( m_wsPingSync );
@@ -182,7 +227,7 @@ namespace as::cryptox::kucoin {
 
 	void Client::run( const t_exchangeClientReadyHandler & handler )
 	{
-		m_clientReadyHandler = handler;
+		as::cryptox::Client::run( handler );
 
 		while ( true ) {
 			initWsClient();
@@ -216,15 +261,8 @@ namespace as::cryptox::kucoin {
 		const FixedNumber & quantity )
 	{
 
-		boost::json::object o;
-
-		o["clientOid"] = uuidString();
-		o["side"] = DirectionName( direction );
-		o["symbol"] = SymbolName( symbol );
-		o["price"] = price.toString();
-		o["size"] = quantity.toString();
-
-		as::t_string body = boost::json::serialize( o );
+		as::t_string body = ApiRequest::PlaceOrder(
+			DirectionName( direction ), SymbolName( symbol ), price, quantity );
 
 		auto url = m_httpApiUrl.addPath( AS_T( "orders" ) );
 
@@ -232,7 +270,7 @@ namespace as::cryptox::kucoin {
 		addAuthHeaders( headers, url.Path(), HttpMethod::POST, body );
 
 		auto res = m_httpClient.post( url, headers, body );
-		//std::cout << res << std::endl;
+		// std::cout << res << std::endl;
 
 		auto resOrders = ApiResponseOrders::deserialize( res );
 

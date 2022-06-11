@@ -62,17 +62,7 @@ namespace as::cryptox::kucoin {
 		void wsHandshakeHandler( as::WsClient & ) override;
 		bool wsReadHandler( as::WsClient &, const char *, size_t ) override;
 
-		void initSymbolMap() override
-		{
-			as::cryptox::Client::initSymbolMap();
-
-			addSymbolMapEntry(
-				AS_T( "BTC-USDT" ), as::cryptox::Symbol::BTC_USDT );
-
-			addSymbolMapEntry(
-				AS_T( "KCS-USDT" ), as::cryptox::Symbol::KCS_USDT );
-		}
-
+		void initSymbolMap() override;
 		void initWsClient() override;
 
 	public:
@@ -90,12 +80,11 @@ namespace as::cryptox::kucoin {
 			, m_apiKeyVersion( AS_TOSTRING( apiKeyVersion ) )
 			, m_wsPingIntervalMs( 0 )
 		{
-
-			initSymbolMap();
 		}
 
 		ApiResponseBullet apiReqBulletPublic();
 		ApiResponseBullet apiReqBulletPrivate();
+		ApiResponseSymbols apiReqSymbols();
 
 		void run( const t_exchangeClientReadyHandler & handler ) override;
 

@@ -39,6 +39,26 @@ namespace as::cryptox::kucoin {
 	class ApiMessage : public ::as::cryptox::ApiMessage<ApiMessage> {
 	};
 
+	class ApiRequest : public ApiMessage {
+	public:
+		static as::t_string PlaceOrder( const as::t_stringview & directionName,
+			const as::t_stringview & symbolName,
+			const FixedNumber & price,
+			const FixedNumber & quantity )
+		{
+
+			boost::json::object o;
+
+			o["clientOid"] = uuidString();
+			o["side"] = directionName;
+			o["symbol"] = symbolName;
+			o["price"] = price.toString();
+			o["size"] = quantity.toString();
+
+			return boost::json::serialize( o );
+		}
+	};
+
 	class ApiResponseBullet : public ApiMessage {
 	protected:
 		int64_t m_pingInterval;
@@ -123,6 +143,69 @@ namespace as::cryptox::kucoin {
 		::as::t_string & OrderId()
 		{
 			return m_orderId;
+		}
+	};
+
+	class ApiResponseSymbols : public ApiMessage {
+	public:
+		struct Pair {
+			as::t_string name;
+			as::t_string baseName;
+			as::t_string quoteName;
+			FixedNumber baseMinSize;
+			FixedNumber quoteMinSize;
+			FixedNumber baseIncrement;
+			FixedNumber quoteIncrement;
+			FixedNumber priceIncrement;
+		};
+
+	protected:
+		std::vector<Pair> m_pairs;
+
+	public:
+		static ApiResponseSymbols deserialize( const ::as::t_string & s )
+		{
+			auto v = boost::json::parse( s );
+
+			auto & root = v.get_object();
+
+			if ( !root.contains( "code" ) ||
+				"200000" != root["code"].get_string() ) {
+
+				throw ::as::Exception( AS_T( "ApiResponseOrders" ) );
+			}
+
+			auto & a = root["data"].get_array();
+
+			ApiResponseSymbols result;
+
+			for ( size_t i = 0; i < a.size(); i++ ) {
+				auto & o = a[i].get_object();
+
+				Pair p;
+				p.name = o["symbol"].get_string();
+				p.baseName = o["baseCurrency"].get_string();
+				p.quoteName = o["quoteCurrency"].get_string();
+				p.baseMinSize = FixedNumber( o["baseMinSize"].get_string() );
+				p.quoteMinSize = FixedNumber( o["quoteMinSize"].get_string() );
+				p.baseIncrement =
+					FixedNumber( o["baseIncrement"].get_string() );
+
+				p.quoteIncrement =
+					FixedNumber( o["quoteIncrement"].get_string() );
+
+				p.priceIncrement =
+					FixedNumber( o["priceIncrement"].get_string() );
+
+				result.m_pairs.push_back( std::move( p ) );
+			}
+
+			return result;
+		}
+
+		const std::vector<Pair> & Pairs() const
+		{
+			return m_pairs;
 		}
 	};
 
