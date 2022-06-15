@@ -94,7 +94,7 @@ namespace as::cryptox::kucoin {
 						message.get() );
 
 					as::cryptox::t_price_book_ticker t;
-					t.symbol = Symbol( m->SymbolName().c_str() );
+					t.symbol = toSymbol( m->SymbolName().c_str() );
 					t.askPrice = std::move( m->AskPrice() );
 					t.askQuantity = std::move( m->AskSize() );
 					t.bidPrice = std::move( m->BidPrice() );
@@ -169,8 +169,8 @@ namespace as::cryptox::kucoin {
 		for ( const auto & p : apiRes.Pairs() ) {
 			std::cout << p.name << std::endl;
 
-			as::cryptox::Coin quote = Coin( p.quoteName.c_str() );
-			as::cryptox::Coin base = Coin( p.baseName.c_str() );
+			as::cryptox::Coin quote = toCoin( p.quoteName.c_str() );
+			as::cryptox::Coin base = toCoin( p.baseName.c_str() );
 
 			as::cryptox::Pair pair( base,
 				quote,
@@ -241,7 +241,7 @@ namespace as::cryptox::kucoin {
 
 		as::cryptox::Client::subscribePriceBookTicker( symbol, handler );
 		auto buffer = WsMessage::Subscribe(
-			std::string( "/market/ticker:" ) + SymbolName( symbol ) );
+			std::string( "/market/ticker:" ) + toName( symbol ) );
 
 		m_wsClient->write( buffer.c_str(), buffer.length() );
 	}
@@ -262,7 +262,7 @@ namespace as::cryptox::kucoin {
 	{
 
 		as::t_string body = ApiRequest::PlaceOrder(
-			DirectionName( direction ), SymbolName( symbol ), price, quantity );
+			toName( direction ), toName( symbol ), price, quantity );
 
 		auto url = m_httpApiUrl.addPath( AS_T( "orders" ) );
 
