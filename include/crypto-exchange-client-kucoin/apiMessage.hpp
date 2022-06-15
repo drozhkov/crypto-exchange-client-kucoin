@@ -50,8 +50,8 @@ namespace as::cryptox::kucoin {
 			boost::json::object o;
 
 			o["clientOid"] = uuidString();
-			o["side"] = directionName;
-			o["symbol"] = symbolName;
+			o["side"] = directionName.data();
+			o["symbol"] = symbolName.data();
 			o["price"] = price.toString();
 			o["size"] = quantity.toString();
 
