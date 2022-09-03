@@ -15,14 +15,15 @@ BraceWrapping:
   IndentBraces: false
   SplitEmptyFunction: true
   SplitEmptyRecord: true
+  BeforeWhile: true
 BreakBeforeBraces: Custom
 ColumnLimit: 80
 Cpp11BracedListStyle: false
-FixNamespaceComments: false
+FixNamespaceComments: true
 IndentCaseLabels: true
 IndentPPDirectives: None
 IndentWidth: 4
-MaxEmptyLinesToKeep: 10
+MaxEmptyLinesToKeep: 2
 NamespaceIndentation: All
 PointerAlignment: Middle
 SortIncludes: false

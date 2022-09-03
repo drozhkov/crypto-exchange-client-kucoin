@@ -29,7 +29,7 @@ int main()
 							  << '/' << t.askQuantity.toString() << " - "
 							  << t.bidPrice.toString() << '/'
 							  << t.bidQuantity.toString() << " - "
-							  << c.Pair( t.symbol ).Name() << std::endl;
+							  << c.toPair( t.symbol ).Name() << std::endl;
 
 					// c.placeOrder( as::cryptox::Direction::BUY,
 					//	t.symbol,
